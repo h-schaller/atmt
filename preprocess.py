@@ -57,6 +57,7 @@ def main(args):
         if not args.quiet:
             logging.info('Loaded a source dictionary ({}) with {} words'.format(args.target_lang, len(src_dict)))
 
+
     if not args.vocab_trg:
         tgt_dict = build_dictionary([args.train_prefix + '.' + args.target_lang])
 
