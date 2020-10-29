@@ -22,6 +22,25 @@ subword-nmt apply-bpe --codes bpe/models/bpe_model_6k --vocabulary bpe/prepared_
 
 ###
 
+# learn BPE model with vocabulary size 4000
+subword-nmt learn-joint-bpe-and-vocab --input baseline/preprocessed_data/train.de baseline/preprocessed_data/train.en --write-vocabulary bpe/prepared_data/dict_4k.de bpe/prepared_data/dict_4k.en --symbols 4000 --total-symbols --output bpe/models/bpe_model_4k
+
+# apply BPE model to all splits (train, tiny_train, validation, test) of datasets of source (de) and target languages (en)
+
+# source texts
+subword-nmt apply-bpe --codes bpe/models/bpe_model_4k --vocabulary bpe/prepared_data/dict_4k.de --vocabulary-threshold 1 < baseline/preprocessed_data/train.de > bpe/preprocessed_data/train_4k.de
+subword-nmt apply-bpe --codes bpe/models/bpe_model_4k --vocabulary bpe/prepared_data/dict_4k.de --vocabulary-threshold 1 < baseline/preprocessed_data/test.de > bpe/preprocessed_data/test_4k.de
+subword-nmt apply-bpe --codes bpe/models/bpe_model_4k --vocabulary bpe/prepared_data/dict_4k.de --vocabulary-threshold 1 < baseline/preprocessed_data/tiny_train.de > bpe/preprocessed_data/tiny_train_4k.de
+subword-nmt apply-bpe --codes bpe/models/bpe_model_4k --vocabulary bpe/prepared_data/dict_4k.de --vocabulary-threshold 1 < baseline/preprocessed_data/valid.de > bpe/preprocessed_data/valid_4k.de
+
+# target texts
+subword-nmt apply-bpe --codes bpe/models/bpe_model_4k --vocabulary bpe/prepared_data/dict_4k.en --vocabulary-threshold 1 < baseline/preprocessed_data/train.en > bpe/preprocessed_data/train_4k.en
+subword-nmt apply-bpe --codes bpe/models/bpe_model_4k --vocabulary bpe/prepared_data/dict_4k.en --vocabulary-threshold 1 < baseline/preprocessed_data/test.en > bpe/preprocessed_data/test_4k.en
+subword-nmt apply-bpe --codes bpe/models/bpe_model_4k --vocabulary bpe/prepared_data/dict_4k.en --vocabulary-threshold 1 < baseline/preprocessed_data/tiny_train.en > bpe/preprocessed_data/tiny_train_4k.en
+subword-nmt apply-bpe --codes bpe/models/bpe_model_4k --vocabulary bpe/prepared_data/dict_4k.en --vocabulary-threshold 1 < baseline/preprocessed_data/valid.en > bpe/preprocessed_data/valid_4k.en
+
+###
+
 # learn BPE model with vocabulary size 1'500
 subword-nmt learn-joint-bpe-and-vocab --input baseline/preprocessed_data/train.de baseline/preprocessed_data/train.en --write-vocabulary bpe/prepared_data/dict_1-5k.de bpe/prepared_data/dict_1-5k.en --symbols 1500 --total-symbols --output bpe/models/bpe_model_1-5k
 
