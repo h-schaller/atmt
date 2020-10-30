@@ -26,6 +26,7 @@ def get_args():
                         help='path to the output file destination')
     parser.add_argument('--max-len', default=100, type=int, help='maximum length of generated sequence')
 
+
     return parser.parse_args()
 
 
