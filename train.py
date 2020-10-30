@@ -25,10 +25,11 @@ def get_args():
     parser.add_argument('--max-tokens', default=None, type=int, help='maximum number of tokens in a batch')
     parser.add_argument('--batch-size', default=1, type=int, help='maximum number of sentences in a batch')
     parser.add_argument('--train-on-tiny', action='store_true', help='train model on a tiny dataset')
-    parser.add_argument('--bpe_vocab_size', default=None, help='indicate vocabulary size of bpe vocabulary (with underscore in front)')
+    parser.add_argument('--bpe_vocab_size', default='', help='indicate vocabulary size of bpe vocabulary (with underscore in front)')
 
     # Add model arguments
     parser.add_argument('--arch', default='lstm', choices=ARCH_MODEL_REGISTRY.keys(), help='model architecture')
+    parser.add_argument('--dropout', default=None, type=float, help='set new dropout rate (p of element to be zeroed)')
 
     # Add optimization arguments
     parser.add_argument('--max-epoch', default=10000, type=int, help='force stop training at specified epoch')
@@ -57,7 +58,12 @@ def get_args():
 def main(args):
     """ Main training function. Trains the translation model over the course of several epochs, including dynamic
     learning rate adjustment and gradient clipping. """
-
+    if args.dropout:
+        args.encoder_dropout_in = args.dropout
+        args.encoder_dropout_out = args.dropout
+        args.decoder_dropout_in = args.dropout
+        args.decoder_dropout_out = args.dropout
+    print(args)
     logging.info('Commencing training!')
     torch.manual_seed(42)
 
