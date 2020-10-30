@@ -25,7 +25,7 @@ def get_args():
     parser.add_argument('--output', default='model_translations.txt', type=str,
                         help='path to the output file destination')
     parser.add_argument('--max-len', default=25, type=int, help='maximum length of generated sequence')
-    parser.add_argument('--bpe_vocab_size', default=None, help='indicate vocabulary size of bpe vocabulary (with underscore in front)')
+    parser.add_argument('--bpe_vocab_size', default='', help='indicate vocabulary size of bpe vocabulary (with underscore in front)')
 
     return parser.parse_args()
 
