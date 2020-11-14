@@ -141,3 +141,5 @@ cython_debug/
 bpe
 dropout
 combined_bpe_dropout
+baseline
+beam_translations
