@@ -30,6 +30,15 @@ def get_args():
     # Add beam search arguments
     parser.add_argument('--beam-size', default=5, type=int, help='number of hypotheses expanded in beam search')
 
+    # helper function for argparse
+    def float_range(arg):
+        """Check whether float argument is float and lies within 0 and 1."""
+        if not 0 <= float(arg) <= 1:
+            raise argparse.ArgumentTypeError('Argument must be between 0 and 1 (inclusive).')
+        return float(arg)
+
+    parser.add_argument('--length-normalisation-alpha', default=0.0, type=float_range, help='control strength of length normalisation')
+
     return parser.parse_args()
 
 
@@ -184,7 +193,7 @@ def main(args):
                 search.prune()
 
         # Segment into sentences
-        best_sents = torch.stack([search.get_best()[1].sequence[1:].cpu() for search in searches])
+        best_sents = torch.stack([search.get_best(args.length_normalisation_alpha)[1].sequence[1:].cpu() for search in searches])
         decoded_batch = best_sents.numpy()
 
         output_sentences = [decoded_batch[row, :] for row in range(decoded_batch.shape[0])]
