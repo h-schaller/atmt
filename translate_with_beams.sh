@@ -41,5 +41,5 @@ cat beam_translations/post/translation_beam18.txt | sacrebleu data_asg4/raw_data
 cat beam_translations/post/translation_beam20.txt | sacrebleu data_asg4/raw_data/test.en >> beam_translations/beam_size_results.txt
 
 # I wrote the file beam_graph.py for the Bachelor course in MT in spring semester 20, and slightly adapted it for this exercise.
-# This reads all BLEU scores from the file we wrote the into above and plots the BLEU scores for each beam size
+# This reads all BLEU scores from the file we wrote above and plots the BLEU scores for each beam size
 python3 beam_graph.py --infile beam_translations/beam_size_results.txt
