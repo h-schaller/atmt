@@ -143,3 +143,12 @@ dropout
 combined_bpe_dropout
 baseline
 beam_translations
+length_norm_translations
+beam_graph.png
+beam_graph.py
+translate_with_beams.sh
+length_normalisation_graph.py
+length_normalisation_graph.png
+translate_with_length_normalisation.sh
+translate_n_different_beams.sh
+diverse_beam_translations
