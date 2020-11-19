@@ -38,6 +38,8 @@ def get_args():
         return float(arg)
 
     parser.add_argument('--length-normalisation-alpha', default=0.0, type=float_range, help='control strength of length normalisation')
+    parser.add_argument('--diverse-hypotheses-gamma', default=0.0, type=float, help='control how strongly beams with different parents should be favoured')
+    parser.add_argument('--n-best', default=1, type=int, help='output n best translations per sentence')
 
     return parser.parse_args()
 
@@ -190,10 +192,20 @@ def main(args):
             # __QUESTION 5: What happens internally when we prune our beams?
             # How do we know we always maintain the best sequences?
             for search in searches:
+                # don't enter this for loop if we don't want more diverse beams
+                if not search.nodes.empty() and not float(args.diverse_hypotheses_gamma) == float(0):
+                    search.diverse_best(tgt_dict, args.diverse_hypotheses_gamma)
                 search.prune()
 
         # Segment into sentences
-        best_sents = torch.stack([search.get_best(args.length_normalisation_alpha)[1].sequence[1:].cpu() for search in searches])
+        orig_list = []
+        for search in searches:
+            nodes_list = search.get_best(args.length_normalisation_alpha, args.n_best)
+            for node in nodes_list:
+                orig_list.append(node[1].sequence[1:].cpu())
+
+        best_sents = torch.stack(orig_list)
+
         decoded_batch = best_sents.numpy()
 
         output_sentences = [decoded_batch[row, :] for row in range(decoded_batch.shape[0])]
@@ -211,15 +223,28 @@ def main(args):
         # Convert arrays of indices into strings of words
         output_sentences = [tgt_dict.string(sent) for sent in output_sentences]
 
-        for ii, sent in enumerate(output_sentences):
-            all_hyps[int(sample['id'].data[ii])] = sent
+        # group n best translations of a sentence together
+        output_sentences_groups = []
+        for index, sent in enumerate(output_sentences):
+            if index == 0 or index % args.n_best == 0:
+                sent_list = []
+                for sent_ind in range(index, index + args.n_best):
+                    sent_list.append(output_sentences[sent_ind])
+                output_sentences_groups.append(sent_list)
+
+        for ii, sent_group in enumerate(output_sentences_groups):
+            all_hyps[int(sample['id'].data[ii])] = '\n'.join(sent_group)
 
 
     # Write to file
     if args.output is not None:
         with open(args.output, 'w') as out_file:
             for sent_id in range(len(all_hyps.keys())):
-                out_file.write(all_hyps[sent_id] + '\n')
+                if args.n_best == 1:
+                    out_file.write(all_hyps[sent_id] + '\n')
+                # if n best hypotheses of sentence are printed, insert double newline
+                else:
+                    out_file.write(all_hyps[sent_id] + '\n\n')
 
 
 if __name__ == '__main__':

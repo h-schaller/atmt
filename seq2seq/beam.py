@@ -28,6 +28,64 @@ class BeamSearch(object):
         node.sequence = torch.cat((node.sequence.cpu(), torch.tensor([self.pad]*missing).long()))
         self.final.put((score, next(self._counter), node))
 
+    def diverse_best(self, tgt_dict, gamma):
+        """ Punishes bottom-ranked hypotheses stemming from same parent hypothesis to get more diverse N-best list. """
+        reranked_nodes = PriorityQueue()
+        reranked_final_nodes = PriorityQueue()
+
+        # this dict stores parent beam in key and indices of all child beams (w.r.t. nodes_list) in list as values
+        same_parents_hypotheses = dict()
+        nodes_list = []
+
+        for i in range(self.nodes.qsize()):
+            node = self.nodes.get()
+            nodes_list.append(node)
+            # if parent beam (all tokens up to last) has been unseen
+            if str(node[2].sequence[:-1]) not in same_parents_hypotheses:
+                lst = [i]
+                same_parents_hypotheses[str(node[2].sequence[:-1])] = lst
+            # if parent beam has been seen, append nodes_list index to value of parent beam key in same_parents_hypotheses dict
+            else:
+                same_parents_hypotheses[str(node[2].sequence[:-1])].append(i)
+
+        sequence_length = nodes_list[0][2].length
+
+        # also look at finished sentences, but only if their <EOS> is at same time step as other generated words
+        if not self.final.empty():
+            for i in range(len(nodes_list), len(nodes_list) + self.final.qsize()):
+                node = self.final.get()
+                nodes_list.append(node)
+
+                # only consider ended sentences when we're at timestep of sequence_length
+                if node[2].sequence[sequence_length] == tgt_dict.eos_idx:  # <EOS> token
+                    if str(node[2].sequence[:sequence_length]) not in same_parents_hypotheses:
+                        lst = [i]
+                        same_parents_hypotheses[str(node[2].sequence[:sequence_length])] = lst
+                    else:
+                        same_parents_hypotheses[str(node[2].sequence[:sequence_length])].append(i)
+
+                else:
+                    reranked_final_nodes.put(node)
+
+        # go through sentences with same parent beams
+        for parent, indices in same_parents_hypotheses.items():
+            child_nodes = PriorityQueue()
+            for index in indices:
+                child_nodes.put(nodes_list[index])
+
+            # again use property of PriorityQueues that smallest (most probable) values are retrieved first
+            for i in range(child_nodes.qsize()):
+                child_node = list(child_nodes.get())
+                child_node[0] = child_node[0] + i * gamma  # the larger i and gamma, the more the translation is punished if it has a better sibling
+                child_node = tuple(child_node)
+                if self.pad in child_node[2].sequence:
+                    reranked_final_nodes.put(child_node)
+                else:
+                    reranked_nodes.put(child_node)
+
+        self.nodes = reranked_nodes
+        self.final = reranked_final_nodes
+
     def get_current_beams(self):
         """ Returns beam_size current nodes with the lowest negative log probability """
         nodes = []
@@ -36,7 +94,7 @@ class BeamSearch(object):
             nodes.append((node[0], node[2]))
         return nodes
 
-    def get_best(self, alpha):
+    def get_best(self, alpha, n_best):
         """ Returns final node with the lowest negative log probability """
         # Merge EOS paths and those that were stopped by
         # max sequence length (still in nodes)
@@ -61,10 +119,14 @@ class BeamSearch(object):
             node = tuple(node_list)
             merged_normalised.put(node)
 
-        node = merged_normalised.get()
-        node = (node[0], node[2])
+        # return n best translations
+        nodes_list = []
+        for _ in range(n_best):
+            node = merged_normalised.get()
+            node = (node[0], node[2])
+            nodes_list.append(node)
 
-        return node
+        return nodes_list
 
     def prune(self):
         """ Removes all nodes but the beam_size best ones (lowest neg log prob) """
